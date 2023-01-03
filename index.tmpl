@@ -1,0 +1,232 @@
+<html>
+  <head>
+    <style type='text/css'>
+      body {
+        background: #252529;
+        color: #97979c;
+        font-family: Arial;
+        margin: 0;
+      }
+
+      a {
+        color: #97979c;
+      }
+
+      .header {
+        display: block;
+        background: #2e2e32;
+      }
+
+      .page-width {
+        display: block;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .logo > * {
+        display: inline-block;
+        vertical-align: middle;
+        padding: 0;
+        margin: 0;
+      }
+
+      .plugins {
+        list-style: none;
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat( 34, 1fr );
+      }
+      
+      .version {
+        display: none;
+      }
+
+      .download {
+        text-align: center;
+      }
+
+      button, .button, select {
+        display: inline-block;
+        border: 0;
+        font-size: 24px;
+        margin: 12px auto;
+        cursor: pointer;
+        padding: 2px 24px;
+        color: #97979c;
+        background: #2e2e32;
+        border-radius: 2px;
+      }
+
+      .download button {
+        background: #72b886;
+        color: #e1e1e6;
+        padding: 12px;
+      }
+
+      h2 {
+        text-align: center;
+      }
+
+      .meta {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: 33.3333% 33.3333% 33.3333%;
+      }
+
+      .meta > div {
+        text-align: center;
+        font-size: 24px;
+      }
+
+      .meta > div > * {
+        display: block;
+      }
+
+      label {
+        cursor: pointer;
+        display: block;
+        padding: 2px;
+      }
+
+      .toggle  {
+        display: none;
+      }
+      .toggle + * {
+        display: none;
+        height: 0;
+      }
+      .toggle:checked + * {
+        display: block;
+        height: auto;
+      }
+
+      @media screen and (max-width: 1000px) {
+        .plugins {
+          grid-template-rows: repeat( 64, 1fr );
+        }
+      }
+      @media screen and (max-width: 767px) {
+        .plugins, .meta {
+          display: block;
+        }
+      }
+    </style>
+    
+    <script type='text/javascript'>
+      function getOS() {
+        var platform = window.navigator?.userAgentData?.platform || window.navigator.platform;
+        if (platform.indexOf("Mac") == 0)
+          return 'x86_64-darwin';
+        else if (platform.indexOf("Win") == 0)
+          return 'x86_64-windows';
+        else if (/Linux/.test(platform))
+          return 'x86_64-linux';
+        return null;
+      }
+
+      function setFromQuery() {
+        if (window.location.search) {
+          var hasPlugin = false;
+          var hasPlatform = false;
+          window.location.search.substr(1, window.location.search.indexOf("#") == -1 ? window.location.search.length : window.location.search.indexOf("#")).split("&").forEach(function(e) {
+            var values = e.split("=");
+            if (values.length == 2) {
+              if (values[0] == "plugin") {
+                document.querySelector('#' + decodeURIComponent(values[1])).checked = true
+                hasPlugin = true;
+              } else if (values[0] == "platform") {
+                document.querySelector('#platform').value = decodeURIComponent(values[1]);
+                hasPlatform = true;
+              } else if (values[0] == "version")
+                document.querySelector('#version').value = decodeURIComponent(values[1]);
+            }
+          });
+          if (hasPlugin)
+            document.querySelector('#plugin-toggle').checked = true;
+        }
+        if (!hasPlatform && getOS())
+          document.querySelector('#platform').value = getOS();
+      }
+
+      function toggleQueryParam(name, value, toggle) {
+        var url = window.location.href;
+        if (toggle == null || toggle) {
+          history.replaceState('', '', url + (url.indexOf("?") == -1 ? '?' : '&') + name + '=' + encodeURIComponent(value)); 
+        } else {
+          if (url.indexOf("?") != -1) {
+            var string = name + '=' + encodeURIComponent(value)
+            var index = url.indexOf(string);
+            if (index != -1) {
+              if (url.charAt(index-1) == '?')
+                history.replaceState('', '', url.substr(0, index - 1) + "?" + url.substr(index + 1 + string.length)); 
+              else
+                history.replaceState('', '', url.substr(0, index - 1) + url.substr(index + string.length)); 
+            }
+          }
+        }
+      }
+      function setQueryParam(name, value) {
+        var url = window.location.href.replace(new RegExp("[\?&]" + name + "=[^&]+"), "");
+        if (url.indexOf("?") == -1)
+          url = url.replace("&", "?");
+        history.replaceState('', '', (url.indexOf("?") == -1 ? (url + "?") : (url + "&")) + name + "=" + encodeURIComponent(value));
+      }
+    </script>
+  </head>
+  <body>
+    <div class='header'>
+      <a href='http://lite-xl.com' class='logo page-width'>
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="isolation:isolate" viewBox="0 0 48 48" width="48" height="48"><defs><clipPath id="_clipPath_oQOpAlaS5aQPNgwhNjsJr8QwgeI7VsJ1"><rect width="48" height="48"/></clipPath></defs><g clip-path="url(#_clipPath_oQOpAlaS5aQPNgwhNjsJr8QwgeI7VsJ1)"><rect width="48" height="48" style="fill:rgb(0,0,0)" fill-opacity="0"/><path d="M 4 0 L 44 0 C 46.208 0 48 1.792 48 4 L 48 44 C 48 46.208 46.208 48 44 48 L 4 48 C 1.792 48 0 46.208 0 44 L 0 4 C 0 1.792 1.792 0 4 0 Z" style="stroke:none;fill:#2E2E32;stroke-miterlimit:10;"/><path d=" M 19 27 L 19 15 C 19 13.896 18.104 13 17 13 L 13 13 L 13 30 C 13 32.76 15.24 35 18 35 L 35 35 L 35 31 C 35 29.896 34.104 29 33 29 L 21 29 C 19.896 29 19 28.104 19 27 Z " fill="rgb(225,225,230)"/><path d=" M 24 22 L 24 16 L 29 19 L 32 24 L 26 24 C 24.896 24 24 23.104 24 22 Z " fill="rgb(147,221,250)"/><path d=" M 35 13 L 21 13 L 35 27 L 35 13 Z " fill="rgb(255,169,77)"/><path d=" M 32 16 L 24 16 L 32 24 L 32 16 Z " fill="rgb(247,201,92)"/></g></svg>
+        <h1>Lite XL Bundler</h1>
+      </a>
+    </div>
+    <form class='specifications page-width' action='https://bundler-server.lite-xl.com' method="GET">
+      <div class='meta'>
+        <div>
+          <label for="platform">Platform</label>
+          <select id="platform" class='query-set' name='platform'>
+            <option value='x86_64-linux'>Linux x86-64</option>
+            <option value='x86_64-darwin'>MacOS x86-64</option>
+            <option value='x86_64-windows'>Windows x86-64</option>
+          </select>
+        </div>
+        <div>
+          <label for='plugin-toggle'>
+            <div>Plugins</div>
+            <div class='button'>Add Plugins</div>
+          </label>
+        </div>
+        <div>
+          <label for="version">Release</label>
+          <select id="version" class='query-set' name='version'>
+            {{ versions }}
+          </select>
+        </div>
+      </div>
+      <input class='toggle' type='checkbox' id='plugin-toggle'>
+      <div>
+        <hr/>
+        <p>
+          Select the plugins you'd like bundled with your release below. Hover over each plugin for details.
+        </p>
+        <ul class='plugins'>
+          {{ plugins }}
+        </ul>
+      </div>
+      <div class='download'>
+        <button>
+          <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><style>.st0{fill:#e1e1e6}</style><path class="st0" d="M13 8.5l-1.3-1.4L8.9 10V0H7.1v10L4.3 7.1 3 8.5l5 5zM3.6 14.1h8.8V16H3.6z"/></svg> 
+          Download Lite XL
+        </button>
+        <button>
+          
+        </button>
+      </div>
+    </form>
+    <script type='text/javascript'>
+      setFromQuery();
+      document.querySelectorAll('select.query-set').forEach(function(p) { p.addEventListener('change', function(e) { setQueryParam(this.name, this.value); }); })
+      document.querySelectorAll('input[type="checkbox"].query-set').forEach(function(p) { p.addEventListener('change', function(e) { toggleQueryParam(this.name, this.value, this.checked); }); })
+    </script>
+  </body>
+</html>
