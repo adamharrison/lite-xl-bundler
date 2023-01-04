@@ -20,7 +20,7 @@ end
 
 @temporary_directory = "tmp"
 
-def handle_request(request_number, method, path, query, headers) 
+def handle_download(request_number, query, headers) 
   version = "2.1-simplified"
   platform = nil
   plugins = []
@@ -59,10 +59,19 @@ def handle_request(request_number, method, path, query, headers)
   }]
 end
 
+def handle_request(request_number, method, path, query, headers) 
+  if path == "/download"
+    return handle_download(request_number, query, headers)
+  elsif path == "/"
+    body = File.read("index.html", encoding: "binary")
+    return [200, { 'Content-Type' => 'text/html', "Content-Length" => body.size }, body]
+  end
+end
+
 FileUtils.mkdir("cache") if !Dir.exist?("cache")
 FileUtils.rm_rf(@temporary_directory)
 FileUtils.mkdir(@temporary_directory)
-system_log("wget https://github.com/lite-xl/lite-xl-plugin-manager/releases/download/latest/lpm.x86_64-linux -O lpm && chmod +x lpm", "can't get lpm") if !File.file?("lpm")
+system_log(0, "wget https://github.com/lite-xl/lite-xl-plugin-manager/releases/download/latest/lpm.x86_64-linux -O lpm && chmod +x lpm", "can't get lpm") if !File.file?("lpm")
 port = ARGV[0] || 4455
 server = TCPServer.new(port)
 
