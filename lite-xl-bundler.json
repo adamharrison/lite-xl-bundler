@@ -1,0 +1,5 @@
+{
+  "name": "bundler",
+  "external_hostname": "bundler.lite-xl.com",
+  "internal_port": "4455"
+}
