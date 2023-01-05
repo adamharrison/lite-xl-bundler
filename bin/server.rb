@@ -7,6 +7,13 @@ require 'fileutils'
 require 'date'
 require 'timeout'
 
+@temporary_directory = "tmp"
+@update_threshold = 3600
+@default_arguments = "--cachedir=cache --userdir #{@temporary_directory}/data --datadir #{@temporary_directory}/data --quiet --json"
+
+class BadRequest < StandardError
+end
+
 def log(request_number, type, message)
   printf("[%8s][%s][%08d]: %s\n", type, DateTime.now.iso8601, request_number, message)
 end
@@ -18,10 +25,9 @@ def system_log(request_number, cmd, exp)
   return results
 end
 
-@temporary_directory = "tmp"
 
 def handle_download(request_number, query, headers) 
-  version = "2.1-simplified"
+  version = "2.1.1-simplified"
   platform = nil
   plugins = []
   query.split("&").each { |x| 
@@ -38,14 +44,16 @@ def handle_download(request_number, query, headers)
   platform = "x86_64-windows" if !platform && headers["user-agent"] =~ /Windows/
   platform = "x86_64-darwin" if !platform && headers["user-agent"] =~ /Macintosh/
   platform = "x86_64-linux" if !platform
-  default_arguments = "--cachedir=cache --userdir #{@temporary_directory}/data --datadir #{@temporary_directory}/data --quiet --arch=#{platform} --json"
+  arguments = "#{@default_arguments} --arch=#{platform}"
 
-  system_log(request_number, "./lpm lite-xl install #{version} #{default_arguments}", "can't find lite-xl #{version} for #{platform}")
-  lite_xl = JSON.parse(system_log(request_number, "./lpm lite-xl list #{default_arguments}", "can't list lite-xls"))["lite-xls"].select { |x| x["version"] == version }.first
+  raise BadRequest.new() if [platform, version, *plugins].select { |x| x =~ /[^a-z\.\-_0-9]/ }.first    
+
+  system_log(request_number, "./lpm lite-xl install #{version} #{arguments}", "can't find lite-xl #{version} for #{platform}")
+  lite_xl = JSON.parse(system_log(request_number, "./lpm lite-xl list #{arguments}", "can't list lite-xls"))["lite-xls"].select { |x| x["version"] == version }.first
   raise "can't find lite-xl installed local #{version}" if !lite_xl || !lite_xl["local_path"]
   FileUtils.cp_r(lite_xl["local_path"] + "/lite-xl", "#{@temporary_directory}/lite-xl")
   FileUtils.cp_r(lite_xl["local_path"] + "/data", "#{@temporary_directory}/data")
-  system_log(request_number, "./lpm install #{plugins.join(' ')} #{default_arguments}", "can't find plugins")
+  system_log(request_number, "./lpm install #{plugins.join(' ')} #{arguments}", "can't find plugins")
   if platform =~ /windows/
     filename = "lite-xl-#{version}-#{platform}.zip"
     system_log(request_number, "cd #{@temporary_directory} && zip -r #{filename} lite-xl data && cd ..", "can't zip lite-xl")
@@ -71,13 +79,20 @@ end
 FileUtils.mkdir("cache") if !Dir.exist?("cache")
 FileUtils.rm_rf(@temporary_directory)
 FileUtils.mkdir(@temporary_directory)
-system_log(0, "wget https://github.com/lite-xl/lite-xl-plugin-manager/releases/download/latest/lpm.x86_64-linux -O lpm && chmod +x lpm", "can't get lpm") if !File.file?("lpm")
+system_log(0, "wget https://github.com/lite-xl/lite-xl-plugin-manager/releases/download/latest/lpm.x86_64-linux -O lpm && chmod +x lpm && ./lpm purge #{@default_arguments}", "can't get lpm") if !File.file?("lpm")
 port = ARGV[0] || 4455
 server = TCPServer.new(port)
+
+last_update = DateTime.now
 
 log(0, "INFO", "Starting up TCP server on port #{port}...")
 total_requests = 0
 while session = server.accept
+  if DateTime.now - last_update > @update_threshold
+    last_update = DateTime.now
+    system_log(0, "./lpm update", "can't update")
+    system_log(0, "./build.rb", "can't build")
+  end
   total_requests += 1
   request_number = total_requests
   begin
@@ -101,6 +116,11 @@ while session = server.accept
       method, full_path = request.split(' ')
       path, query = full_path.split('?')
       status, response_headers, body = handle_request(request_number, method, path, query || "", request_headers)
+    rescue BadRequestError => e
+      status = 400
+      body = "400 Bad Request"
+      response_headers = { "Content-Length" => body.size }
+      log(request_number, "ERROR", "Bad Request: #{e.backtrace.join("\n")}.")
     rescue StandardError => e
       status = 500
       body = "500 Internal Server Error"
