@@ -9,11 +9,12 @@ require 'timeout'
 
 @temporary_directory = "tmp"
 @update_threshold = 3600
+@max_header_size = 16*1024
 @default_arguments = "--cachedir=cache --quiet --json"
 
-errors = {
-  "400" => "Bad Request",
-  "404" => "Not Found",
+codes = {
+  "200" => "OK",          "204" => "No Content", 
+  "400" => "Bad Request", "404" => "Not Found",  "431" => "Request Header Fields Too Large",
   "500" => "Internal Server Error"
 }
 
@@ -110,12 +111,16 @@ while session = server.accept
     begin 
       request = nil
       request_headers = {}
+      total_bytes = 0
       Timeout::timeout(5, StandardError, "Read Timeout") {  
         request = session.gets(4096).chomp
         log(request_number, "INFO", request.chomp)
+        total_bytes += request.size
         while true
           line = session.gets(4096)
+          total_bytes += line.size
           break if line == "\r\n"
+          raise RuntimeError.new(431) if total_bytes > @max_header_size
           captures = line.match /^([\w\-_]+)\s*:\s*(.*?)\r\n$/
           raise "can't parse header" unless captures && captures.size == 3
           request_headers[captures[1].downcase] = captures[2]
@@ -125,9 +130,9 @@ while session = server.accept
       path, query = full_path.split('?')
       status, response_headers, body = handle_request(request_number, method, path, query || "", request_headers)
     rescue StandardError => e
-      code = errors[e.message] ? e.message : "500"
-      status, response_headers, body = [code.to_i, { "Content-Length" => errors[code].size + 4 }, code + " " + errors[code]]
-      log(request_number, "ERROR", e.to_s +  " #{e.backtrace.join("; ")}.")
+      code = codes[e.message] ? e.message : "500"
+      status, response_headers, body = [code.to_i, { "Content-Length" => codes[code].size + 4 }, code + " " + codes[code]]
+      log(request_number, "ERROR", "#{e.backtrace.join("; ")}") if code == "500"
     end
     Timeout::timeout(5, StandardError, "Read Timeout") {  
       session.print "HTTP/1.1 #{status}\r\n"
@@ -150,10 +155,10 @@ while session = server.accept
             session.print result
           }
         end
-        log(request_number, "INFO", "#{status} OK")
       else
         raise "Body not set correctly."
       end
+      log(request_number, "INFO", "#{status} " + (codes[status.to_s] || "Unknown"))
     rescue StandardError => e
       log(request_number, "ERROR", "Error printing body: #{e}. Closing.")
     end
