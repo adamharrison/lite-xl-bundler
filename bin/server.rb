@@ -11,45 +11,11 @@ require 'timeout'
 @update_threshold = 3600
 @default_arguments = "--cachedir=cache --quiet --json"
 
-class HTTPError < StandardError
-  def initialize(e = nil) 
-    super(e)
-    @original = e if e
-  end
-  def original 
-    return @original 
-  end
-  def status_line 
-    return self.code.to_s + " " + self.status 
-  end
-  def response 
-    return [self.code, { "Content-Length" => self.status_line.size }, self.status_line] 
-  end
-end
-class BadRequestError < HTTPError
-  def code 
-    return 400 
-  end
-  def status 
-    return "Bad Request" 
-  end
-end
-class NotFoundError < HTTPError
-  def code 
-    return 404 
-  end
-  def status 
-    return "Not Found" 
-  end
-end
-class InternalServerError < HTTPError
-  def code 
-    return 500 
-  end
-  def status 
-    return "Internal Server Error" 
-  end
-end
+errors = {
+  "400" => "Bad Request",
+  "404" => "Not Found",
+  "500" => "Internal Server Error"
+}
 
 def log(request_number, type, message)
   printf("[%8s][%s][%08d]: %s\n", type, DateTime.now.iso8601, request_number, message)
@@ -81,23 +47,24 @@ def handle_download(request_number, query, headers)
   platform = "x86_64-windows" if !platform && headers["user-agent"] =~ /Windows/
   platform = "x86_64-darwin" if !platform && headers["user-agent"] =~ /Macintosh/
   platform = "x86_64-linux" if !platform
+  binary_extension = platform == "x86_64-windows" ? ".exe" : ""
   directory = "#{@temporary_directory}/#{request_number}"
   arguments = "#{@default_arguments} --arch=#{platform}  --userdir #{directory}/data --datadir #{directory}/data"
 
-  raise BadRequestError.new() if [platform, version, *plugins].select { |x| x =~ /[^a-z\.\-_0-9]/ }.first
+  raise RuntimeError.new(400) if [platform, version, *plugins].select { |x| x =~ /[^a-z\.\-_0-9]/ }.first
 
   system_log(request_number, "./lpm lite-xl install #{version} #{arguments}", "can't find lite-xl #{version} for #{platform}")
   lite_xl = JSON.parse(system_log(request_number, "./lpm lite-xl list #{arguments}", "can't list lite-xls"))["lite-xls"].select { |x| x["version"] == version }.first
   raise "can't find lite-xl installed local #{version}" if !lite_xl || !lite_xl["local_path"]
-  FileUtils.cp_r(lite_xl["local_path"] + "/lite-xl", "#{directory}/lite-xl")
-  FileUtils.cp_r(lite_xl["local_path"] + "/data", "#{directory}/data")
+  FileUtils.cp_r(lite_xl["local_path"] + "/lite-xl#{binary_extension}", "#{directory}/lite-xl#{binary_extension}")
+  FileUtils.cp_r(lite_xl["local_path"] + "/data/.", "#{directory}/data")
   system_log(request_number, "./lpm install #{plugins.join(' ')} #{arguments}", "can't find plugins")
   if platform =~ /windows/
     filename = "lite-xl-#{version}-#{platform}.zip"
-    system_log(request_number, "cd #{directory} && zip -r #{filename} lite-xl data && cd ..", "can't zip lite-xl")
+    system_log(request_number, "cd #{directory} && zip -r #{filename} lite-xl#{binary_extension} data && cd ..", "can't zip lite-xl")
   else
     filename = "lite-xl-#{version}-#{platform}.tar.gz"
-    system_log(request_number, "tar -C #{directory} -zcvf #{directory}/#{filename} lite-xl data", "can't tar lite-xl")
+    system_log(request_number, "tar -C #{directory} -zcvf #{directory}/#{filename} lite-xl#{binary_extension} data", "can't tar lite-xl")
   end
   file = File.open("#{directory}/#{filename}", "rb")
   return [200, { "Content-Length" => File.size("#{directory}/#{filename}"), "Content-Type" => "application/octet-stream", "Content-Disposition" => "attachment; filename=\"#{filename}\"" }, Proc.new {
@@ -112,7 +79,7 @@ def handle_request(request_number, method, path, query, headers)
     body = File.read("index.html", encoding: "binary")
     return [200, { 'Content-Type' => 'text/html', "Content-Length" => body.size }, body]
   else
-    raise NotFoundError.new()
+    raise RuntimeError.new(404)
   end
 end
 
@@ -141,31 +108,26 @@ while session = server.accept
     body = nil
     response_headers = {}
     begin 
-      begin 
-        request = nil
-        request_headers = {}
-        Timeout::timeout(5, StandardError, "Read Timeout") {  
-          request = session.gets(4096).chomp
-          log(request_number, "INFO", request.chomp)
-          while true
-            line = session.gets(4096)
-            break if line == "\r\n"
-            captures = line.match /^([\w\-_]+)\s*:\s*(.*?)\r\n$/
-            raise "can't parse header" unless captures && captures.size == 3
-            request_headers[captures[1].downcase] = captures[2]
-          end
-        }
-        method, full_path = request.split(' ')
-        path, query = full_path.split('?')
-        status, response_headers, body = handle_request(request_number, method, path, query || "", request_headers)
-      rescue HTTPError => e
-        raise
-      rescue StandardError => e
-        raise InternalServerError.new(e)
-      end
-    rescue HTTPError => e
-      status, response_headers, body = e.response
-      log(request_number, "ERROR", e.status_line + ": #{(e.original || e).to_s} #{(e.original || e).backtrace.join("; ")}.")
+      request = nil
+      request_headers = {}
+      Timeout::timeout(5, StandardError, "Read Timeout") {  
+        request = session.gets(4096).chomp
+        log(request_number, "INFO", request.chomp)
+        while true
+          line = session.gets(4096)
+          break if line == "\r\n"
+          captures = line.match /^([\w\-_]+)\s*:\s*(.*?)\r\n$/
+          raise "can't parse header" unless captures && captures.size == 3
+          request_headers[captures[1].downcase] = captures[2]
+        end
+      }
+      method, full_path = request.split(' ')
+      path, query = full_path.split('?')
+      status, response_headers, body = handle_request(request_number, method, path, query || "", request_headers)
+    rescue StandardError => e
+      code = errors[e.message] ? e.message : "500"
+      status, response_headers, body = [code.to_i, { "Content-Length" => errors[code].size + 4 }, code + " " + errors[code]]
+      log(request_number, "ERROR", e.to_s +  " #{e.backtrace.join("; ")}.")
     end
     Timeout::timeout(5, StandardError, "Read Timeout") {  
       session.print "HTTP/1.1 #{status}\r\n"
