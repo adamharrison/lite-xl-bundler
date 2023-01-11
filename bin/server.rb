@@ -6,6 +6,7 @@ require 'json'
 require 'fileutils'
 require 'date'
 require 'timeout'
+require 'zlib'
 
 @temporary_directory = "tmp"
 @update_threshold = 3600
@@ -73,12 +74,22 @@ def handle_download(request_number, query, headers)
   }]
 end
 
+last_update = DateTime.now
+def update_build
+  last_update = DateTime.now
+  system_log(0, "./lpm update #{@default_arguments}", "can't update")
+  system_log(0, "./build.rb", "can't build")
+  @index_page = File.read("index.html", encoding: "binary")
+  @index_page_zipped = Zlib::Deflate.deflate(@index_page)
+end
+
+
 def handle_request(request_number, method, path, query, headers) 
   if path == "/download"
-    return handle_download(request_number, query, headers)
+    return handle_download(request_number, query, headers)    
   elsif path == "/"
-    body = File.read("index.html", encoding: "binary")
-    return [200, { 'Content-Type' => 'text/html', "Content-Length" => body.size }, body]
+    return [200, { 'Content-Type' => 'text/html', "Content-Length" => @index_page_zipped.size, "Content-Encoding" => "deflate" }, @index_page_zipped] if headers['accept-encoding'] =~ /gzip/
+    return [200, { 'Content-Type' => 'text/html', "Content-Length" => @index_page.size }, @index_page]
   else
     raise RuntimeError.new(404)
   end
@@ -90,17 +101,12 @@ FileUtils.mkdir(@temporary_directory)
 system_log(0, "wget https://github.com/lite-xl/lite-xl-plugin-manager/releases/download/latest/lpm.x86_64-linux -O lpm && chmod +x lpm && ./lpm purge #{@default_arguments}", "can't get lpm") if !File.file?("lpm")
 port = ARGV[0] || 4455
 server = TCPServer.new(port)
-
-last_update = DateTime.now
+update_build()
 
 log(0, "INFO", "Starting up TCP server on port #{port}...")
 total_requests = 0
 while session = server.accept
-  if DateTime.now - last_update > @update_threshold
-    last_update = DateTime.now
-    system_log(0, "./lpm update", "can't update")
-    system_log(0, "./build.rb", "can't build")
-  end
+  update_build() if DateTime.now - last_update > @update_threshold
   total_requests += 1
   request_number = total_requests
   FileUtils.mkdir("#{@temporary_directory}/#{request_number}")
@@ -132,7 +138,7 @@ while session = server.accept
     rescue StandardError => e
       code = codes[e.message] ? e.message : "500"
       status, response_headers, body = [code.to_i, { "Content-Length" => codes[code].size + 4 }, code + " " + codes[code]]
-      log(request_number, "ERROR", "#{e.backtrace.join("; ")}") if code == "500"
+      log(request_number, "ERROR", "#{e} #{e.backtrace.join("; ")}") if code == "500"
     end
     Timeout::timeout(5, StandardError, "Read Timeout") {  
       session.print "HTTP/1.1 #{status}\r\n"
