@@ -1,0 +1,294 @@
+<html>
+  <head>
+    <title>Lite XL Bundler</title>
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="/static/favicon.jpg" />  
+    <style type='text/css'>
+      @font-face {
+        font-family: 'JetBrains';
+        src: url('/static/JetBrainsMono-Regular.ttf');
+      }
+      body { 
+        font-family: JetBrains, Arial;
+        color: #97979c; 
+        margin: 0;
+        ul { padding: 0; }
+        li { list-style: none; }
+        a { text-decoration: none; color: #97979c;  }
+        background: #252529;
+        min-height: 100vh;
+        scrollbar-width: thin;
+      }
+      .content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 8px;
+        background: #2e2e32;
+        min-height: 100vh;
+      }
+      .dim { color: #525257; }
+      .small { font-size: 12px; }
+
+      .header {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: center;
+        gap: 24px;
+      }
+      select, button, input[type='search'] {
+        display: block;
+        font-family: JetBrains, Arial;
+        width: 100%;
+        padding: 4px;
+        box-shadow: none;
+        border: 1px solid #202024;
+        &:active, &:focus {
+          border: 1px solid #202024;
+          outline: 0;
+        }
+        cursor: pointer;
+        font-size: 16px;
+        background: none;
+        color: #e1e1e6;
+        option {
+          background-color: #202024;
+        }
+        &:hover, &:active, &:focus {
+          background: #252529;
+        }
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      h1, h4 { text-align: center; color: #e1e1e6; }
+      .addons {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-auto-flow: column;
+        gap: 4px;
+
+        input { display: none; }
+        
+        label {
+          display: flex;
+          padding: 4px 8px;
+          align-items: center;
+          cursor: pointer;
+          list-style: none;
+          gap: 4px;
+          border: 1px solid transparent;
+          &:hover {
+            background: #48484f;
+          }
+          &:has(input:checked) {
+            background: #48484f;
+            border: 1px solid #202024;
+          }
+          &.core:has(input:checked) {
+            background: #48484f;
+            cursor: not-allowed;
+          }
+          
+          position: relative;
+          .icons {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            > * {
+              width: 16px;
+              height: 16px;
+              display: block;
+              background-repeat: no-repeat no-repeat;
+              background-position: center center;
+              background-size: cover;
+            }
+          }
+          .external {
+            opacity: 0.5;
+            &:hover { opacity: 1.0; }
+            background-image: url("data:image/svg+xml,%0A%3Csvg fill='%23aaaaaa' xmlns='http://www.w3.org/2000/svg' width='92pt' height='92pt' viewBox='0 0 92 92'%3E%3Cdefs%3E%3CclipPath id='a'%3E%3Cpath d='M0 .113h91.887V92H0Zm0 0'/%3E%3C/clipPath%3E%3C/defs%3E%3Cg clip-path='url(%23a)'%3E%3Cpath style='stroke:none;fill-rule:nonzero;fill:%23fff;fill-opacity:1' d='M90.156 41.965 50.036 1.848a5.918 5.918 0 0 0-8.372 0l-8.328 8.332 10.566 10.566a7.03 7.03 0 0 1 7.23 1.684 7.034 7.034 0 0 1 1.669 7.277l10.187 10.184a7.028 7.028 0 0 1 7.278 1.672 7.04 7.04 0 0 1 0 9.957 7.05 7.05 0 0 1-9.965 0 7.044 7.044 0 0 1-1.528-7.66l-9.5-9.497V59.36a7.04 7.04 0 0 1 1.86 11.29 7.04 7.04 0 0 1-9.957 0 7.04 7.04 0 0 1 0-9.958 7.06 7.06 0 0 1 2.304-1.539V33.926a7.049 7.049 0 0 1-3.82-9.234L29.242 14.272 1.73 41.777a5.925 5.925 0 0 0 0 8.371L41.852 90.27a5.925 5.925 0 0 0 8.37 0l39.934-39.934a5.925 5.925 0 0 0 0-8.371'/%3E%3C/g%3E%3C/svg%3E");
+          }
+          .lua {
+            opacity: 0.5;
+            background-image: url("data:image/svg+xml,%3Csvg fill='%23aaaaaa' width='800px' height='800px' viewBox='0 0 32 32' version='1.1' xmlns='http://www.w3.org/2000/svg'%3E%3Ctitle%3Elua%3C/title%3E%3Cpath d='M24.348 21.062v0.65c-0.176 0.057-0.378 0.090-0.587 0.092h-0.001c-0.432-0.001-0.794-0.302-0.887-0.706l-0.001-0.006c-0.462 0.489-1.114 0.795-1.838 0.796h-0c-1.096 0-1.777-0.579-1.777-1.56-0.001-0.018-0.001-0.039-0.001-0.061 0-0.617 0.392-1.142 0.941-1.34l0.010-0.003c0.513-0.182 1.106-0.301 1.722-0.329l0.014-0c0.681-0.082 0.898-0.239 0.898-0.6v-0.227c0-0.515-0.435-0.806-1.208-0.806-0.806 0-1.196 0.3-1.27 0.962h-0.866c0.051-1.25 0.857-1.755 2.167-1.755 1.332 0 2.033 0.515 2.033 1.477v3.014c0 0.269 0.166 0.422 0.466 0.422 0.067-0.001 0.131-0.009 0.193-0.022l-0.007 0.001zM17.391 11.245c0-0 0-0 0-0.001 0-1.855 1.504-3.36 3.36-3.36s3.36 1.504 3.36 3.36c0 1.855-1.504 3.359-3.359 3.36h-0c-1.855-0.001-3.359-1.504-3.36-3.359v-0zM18.053 21.733h-0.774v-0.837c-0.353 0.598-0.993 0.993-1.726 0.993-0.028 0-0.057-0.001-0.085-0.002l0.004 0c-1.053 0-1.724-0.579-1.724-1.477v-4.087h0.857v3.749c-0.001 0.015-0.001 0.033-0.001 0.050 0 0.562 0.455 1.017 1.017 1.017 0.035 0 0.070-0.002 0.105-0.005l-0.004 0c0.899 0 1.476-0.722 1.476-1.826v-2.985h0.857v5.411zM12.892 21.733h-4.676v-7.527h0.961v6.681h3.716v0.846zM16 4.526c-6.336 0-11.472 5.136-11.472 11.472s5.136 11.472 11.472 11.472c6.336 0 11.472-5.136 11.472-11.472v0c0-0 0-0.001 0-0.001 0-6.335-5.136-11.471-11.471-11.471-0 0-0.001 0-0.001 0h0zM20.154 20.308c0 0.589 0.392 0.825 1.065 0.825 0.051 0.006 0.11 0.010 0.17 0.010 0.743 0 1.357-0.554 1.45-1.272l0.001-0.007v-0.806c-0.407 0.168-0.88 0.276-1.374 0.3l-0.010 0c-0.918 0.136-1.302 0.382-1.302 0.951zM27.472 1.165c-0 0-0 0-0 0-1.856 0-3.36 1.504-3.36 3.36s1.504 3.36 3.36 3.36c1.856 0 3.36-1.504 3.36-3.36 0-0.619-0.167-1.198-0.459-1.696l0.009 0.016c-0.592-1.011-1.673-1.68-2.91-1.68v0zM19.055 30.34l0.074 0.337c0.425-0.092 0.85-0.202 1.267-0.332l-0.102-0.327c-0.406 0.124-0.824 0.231-1.238 0.322zM4.857 26.048c0.291 0.322 0.6 0.637 0.917 0.932l0.235-0.251c-0.311-0.287-0.612-0.596-0.896-0.911zM8.965 29.251c0.384 0.202 0.781 0.392 1.182 0.561l0.134-0.317c-0.391-0.166-0.78-0.349-1.155-0.549zM16.521 30.652l0.011 0.344c0.435-0.017 0.873-0.051 1.306-0.105l-0.044-0.339c-0.42 0.051-0.85 0.085-1.273 0.1zM6.769 27.83c0.342 0.266 0.702 0.522 1.067 0.756l0.186-0.287c-0.356-0.23-0.706-0.481-1.041-0.74zM22.656 29.057c-0.379 0.192-0.766 0.371-1.157 0.53l0.13 0.32c0.397-0.164 0.799-0.344 1.183-0.542l0.005-0.003-0.154-0.307zM13.919 30.857c0.431 0.061 0.87 0.102 1.303 0.127l0.018-0.344c-0.424-0.022-0.852-0.064-1.273-0.122zM11.371 30.268c0.414 0.134 0.837 0.251 1.261 0.349l0.077-0.335c-0.414-0.095-0.829-0.21-1.232-0.341zM29.062 9.342c0.192 0.379 0.371 0.771 0.53 1.165l0.32-0.13c-0.164-0.402-0.346-0.804-0.545-1.191zM29.941 20.525l0.33 0.107c0.134-0.415 0.251-0.837 0.349-1.262l-0.335-0.079c-0.096 0.416-0.211 0.831-0.344 1.233zM30.517 18.036l0.341 0.049c0.061-0.432 0.102-0.869 0.127-1.303l-0.344-0.018c-0.022 0.422-0.064 0.852-0.125 1.272zM28.945 22.878l0.305 0.161c0.202-0.384 0.392-0.781 0.561-1.181l-0.317-0.134q-0.248 0.589-0.549 1.153zM25.816 26.891l0.23 0.254c0.322-0.287 0.637-0.599 0.932-0.915l-0.251-0.235c-0.288 0.31-0.596 0.61-0.911 0.896zM27.557 25.021l0.271 0.212c0.269-0.341 0.522-0.701 0.759-1.067l-0.287-0.185c-0.233 0.356-0.481 0.705-0.742 1.040zM23.777 28.425l0.181 0.292c0.369-0.232 0.732-0.481 1.078-0.742l-0.205-0.274c-0.34 0.255-0.696 0.5-1.055 0.724zM2.183 10.149l0.316 0.134c0.165-0.391 0.35-0.781 0.549-1.155l-0.304-0.16c-0.204 0.384-0.392 0.781-0.561 1.181zM3.405 7.839l0.289 0.187c0.231-0.356 0.48-0.707 0.74-1.042l-0.271-0.212c-0.266 0.345-0.521 0.704-0.757 1.067zM12.931 1.663l-0.072-0.337c-0.425 0.090-0.851 0.2-1.267 0.33l0.101 0.327c0.406-0.124 0.824-0.231 1.238-0.32zM18.067 1.136c-0.432-0.059-0.87-0.1-1.303-0.122l-0.017 0.341c0.424 0.022 0.854 0.064 1.273 0.122zM30.655 15.485l0.344-0.012q-0.022-0.655-0.102-1.306l-0.341 0.041c0.051 0.422 0.085 0.852 0.1 1.277zM9.344 2.935c0.372-0.187 0.757-0.364 1.145-0.522l-0.13-0.317c-0.396 0.159-0.79 0.34-1.171 0.535l-0.019 0.010 0.156 0.305zM20.615 1.719c-0.415-0.131-0.837-0.249-1.262-0.346l-0.079 0.335c0.415 0.095 0.83 0.21 1.235 0.341zM23.024 2.74c-0.386-0.205-0.784-0.392-1.183-0.561l-0.134 0.315c0.392 0.166 0.781 0.351 1.157 0.549zM30.022 11.709c0.125 0.407 0.232 0.825 0.32 1.24l0.337-0.074c-0.090-0.425-0.2-0.852-0.327-1.267zM15.466 1.348l-0.012-0.344c-0.435 0.015-0.873 0.049-1.305 0.102l0.042 0.341c0.422-0.051 0.85-0.085 1.275-0.1zM1.324 19.132c0.091 0.425 0.202 0.852 0.33 1.267l0.329-0.1c-0.125-0.407-0.234-0.822-0.322-1.237zM1.347 16.525l-0.344 0.012c0.015 0.435 0.050 0.873 0.104 1.303l0.341-0.041c-0.053-0.42-0.086-0.85-0.101-1.275zM1.377 12.637l0.336 0.079c0.095-0.415 0.21-0.83 0.34-1.232l-0.326-0.109c-0.135 0.415-0.252 0.84-0.35 1.262zM2.413 21.501l-0.319 0.13c0.161 0.397 0.342 0.794 0.539 1.178l0.006 0.012 0.306-0.156-0.006-0.012c-0.191-0.376-0.369-0.764-0.526-1.152zM3.284 23.959c0.231 0.371 0.48 0.732 0.741 1.078l0.275-0.205c-0.256-0.339-0.499-0.694-0.725-1.055zM8.213 3.577l-0.182-0.294c-0.37 0.232-0.732 0.481-1.078 0.742l0.207 0.274c0.337-0.254 0.692-0.499 1.053-0.722zM6.173 5.114l-0.23-0.256c-0.322 0.29-0.636 0.6-0.932 0.917l0.252 0.235c0.289-0.31 0.595-0.612 0.91-0.896zM1.479 13.972l-0.34-0.046c-0.060 0.43-0.102 0.869-0.126 1.301l0.344 0.020c0.022-0.425 0.064-0.852 0.122-1.275z'%3E%3C/path%3E%3C/svg%3E");
+          }
+        }
+        .info {
+          display: flex;
+          flex-grow: 1;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .title {
+          gap: 4px;
+          display: flex;
+        }
+        .details {
+          display: flex;
+          gap: 4px;
+        }
+        .type:hover {
+          color: #e1e1e6;
+        }
+        .tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 2px;
+          > * {
+            background: #252529;
+            border: 1px solid #252529;
+            padding: 1px 3px;
+            &:hover {
+              border: 1px solid #e1e1e6;
+            }
+          }
+        }
+      }
+      @media screen and (max-width: 767px) {
+        .addons, .header {
+          display: flex;
+          flex-direction: column;
+        }
+      }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type='module'>
+      import { h, render, createContext } from '/static/preact.js';
+      import { useState, useRef, useEffect, useContext, useMemo, useCallback } from '/static/preact.js';
+      import { html as htm } from '/static/preact.js';
+      const html = htm.bind(h);
+
+      
+      function App() {
+        const [liteXLs, setLiteXLs] = useState(null);
+        const [addons, setAddons] = useState(null);
+        const [system, setSystem] = useState(null);
+        const [shouldForceRerender, setForceRerender] = useState(null);
+
+        const searchParams = useMemo(() => new URLSearchParams(window.location.search), [window.location.search]);
+        const selectedVersion = useMemo(() => liteXLs?.filter((v) => v.version == searchParams?.get('version'))[0], [window.location.search]);
+        const setSelectedVersion = (version) => {
+          searchParams.set('version', version.version);
+          window.history.pushState(null, "", `${window.location.pathname}?${searchParams.toString()}`);
+          setForceRerender({ });
+        };
+        const selectedArch = searchParams.get('arch');
+        const setSelectedArch = (arch) => {
+          if (arch)
+            searchParams.set('arch', arch);
+          else
+            searchParams.delete('arch');
+          window.history.pushState(null, "", `${window.location.pathname}?${searchParams.toString()}`);
+          setForceRerender({ });
+        };
+        const selectedAddons = useMemo(() => addons && searchParams.getAll('addon').map((value) => addons.filter((a) => a.id == value)[0]), [addons, window.location.search]);
+        const setSelectedAddons = (selectedAddons) => {
+          searchParams.delete('addon')
+          selectedAddons.forEach((a) => searchParams.append('addon', a.id));
+          window.history.pushState(null, "", `${window.location.pathname}?${searchParams.toString()}`);
+          setForceRerender({ });
+        };
+        const search = searchParams.get('search');
+        const setSearch = (search) => {
+          if (search == '')
+            searchParams.delete('search');
+          else
+            searchParams.set('search', search);
+          window.history.pushState(null, "", `${window.location.pathname}?${searchParams.toString()}`);
+          setForceRerender({ });
+        };
+        
+        useEffect(() => {
+          fetch('/api/system').then((r) => r.json()).then((r) => {
+            setSystem(r); 
+          });
+        }, []);
+        useEffect(() => {
+          fetch('/api/lite-xl').then((r) => r.json()).then((r) => {
+            setLiteXLs(r['lite-xls']);
+            setSelectedVersion(r["lite-xls"][0]);
+          });
+        }, []);
+        useEffect(() => {
+          fetch('/api/addons').then((r) => r.json()).then((r) => {
+            setAddons(r.addons.map((a) => ({
+              ...a,
+              tags: [
+                ...a.tags,
+                ...(/github\.com\/lite-xl\//.test(a.repository) ? ['official'] : []),
+                ...(a.status == "core" ? ['core'] : [])
+              ]
+            })));
+          });
+        }, []);
+        const version = selectedVersion ?? liteXLs?.[0];
+        const arch = selectedArch ?? system?.arch;
+        const filterFunction = useCallback((addon) => {
+          if (addon.type == "plugin" && parseInt(addon.mod_version) != parseInt(version.mod_version))
+            return false;
+          if (search != null)
+            return JSON.stringify(addon).toLowerCase().indexOf(search.toLowerCase()) != -1;
+          return true;
+        }, [search, version]);
+        const filteredAddons = addons?.filter(filterFunction);
+        return (addons && liteXLs && system) ? html`<div class='content'>
+          <h1>Lite XL Bundler</h1>
+          <h4 class='version'><a target='_blank' href='https://github.com/lite-xl/lite-xl-plugin-manager'>lpm version ${system?.version}</a></h4>
+          <form action="/api/lite-xl/${version?.version}" method="GET">
+            <div class='header'>
+              ${liteXLs && html`<select onChange=${(e) => setSelectedVersion(liteXLs.filter((version) => version.version == e.target.value)[0])} name='version'>
+                ${liteXLs.map((a) => html`<option selected=${selectedVersion == a} value=${a.version}>${a.version}</option>`)}
+              </select>`}
+              <select name='arch' onChange=${(e) => setSelectedArch(e.target.value == 'autodetect' ? null : e.target.value)} value=${arch}>
+                ${selectedArch && html`<option value='autodetect'>Autodetect</option>`}
+                <option value='x86_64-linux'>Linux x86_64${!selectedArch && arch == 'x86_64-linux' ? ' (Autodetected)' : ''}</option>
+                <option value='aarch64-linux'>Linux aarch64${!selectedArch && arch == 'aarch64-linux' ? ' (Autodetected)' : ''}</option>
+                <option value='x86_64-windows'>Windows x86_64${!selectedArch && arch == 'x86_64-windows' ? ' (Autodetected)' : ''}</option>
+                <option value='x86_64-darwin'>MacOS x86_64${!selectedArch && arch == 'x86_64-darwin' ? ' (Autodetected)' : ''}</option>
+                <option value='aarch64-darwin'>MacOS aarch64${!selectedArch && arch == 'aarch64-darwin' ? ' (Autodetected)' : ''}</option>
+              </select>
+              <div>mod-version: ${version?.mod_version}</div>
+            </div>
+            <button>Download Portable Bundle</button>
+            <div class='filters'>
+              <input type='search' onInput=${(e) => { setSearch(e.target.value); }} placeholder='Enter a term to filter on...' value=${search ?? ''}/>
+            </div>
+            ${filteredAddons && html`<ul class='addons' style=${{gridTemplateRows: `repeat(${Math.ceil(filteredAddons.length / 4)}, 1fr)`}}>
+              ${filteredAddons.sort((a,b) => (a.name ?? a.id).localeCompare(b.name ?? b.id)).map((a) => html`<label title=${a.description} for=${a.id + ":" + a.version} class='mod-version-${parseInt(a.mod_version)} ${a.status == "core" ? 'core' : ''}'>
+                <input onChange=${(e) => {
+                  if (e.target.checked)
+                    setSelectedAddons([...selectedAddons, a]);
+                  else
+                    setSelectedAddons(selectedAddons.filter((v) => v != a));
+                }} checked=${a.status == "core" || selectedAddons.indexOf(a) != -1}  disabled=${a.status == "core"} id=${a.id + ":" + a.version} type='checkbox'/>
+                <div class='info'>
+                  <div class='title'>
+                    <div>${a.name ?? a.id}</div>
+                    <div class='dim'>${a.version}</div>
+                  </div>
+                  <div class='details'>
+                    <div onClick=${(e) => { setSearch(a.type); e.preventDefault(); e.stopPropagation(); }} class='type small dim'>${a.type}</div>
+                    ${a.type == "plugin" && html`<div class='modversion small dim'>mod-version: ${a.mod_version}</div>`}
+                  </div>
+                  <ul class='tags small dim'>
+                    ${a.tags.slice(0,3).map((tag) => html`<li onClick=${(e) => { setSearch(tag); e.preventDefault(); e.stopPropagation(); }}>${tag}</li>`)}
+                  </ul>
+                </div>
+                <div class='icons'>
+                  ${a.remote && html`<a href='${a.remote.replace(/(\.git)?:[a-f0-9]+$/, "")}' target='_blank' class='external'></a>`}
+                </div>
+              </label>`)}
+            </ul>`}
+          </form>
+        </div>` : html`<div class='content'></div>`;
+      }      
+
+      render(html`<${App}/>`, document.getElementById('app'));
+    </script>
+  </head>
+  <body>
+    <div id='app'></div>
+  </body>
+</html>

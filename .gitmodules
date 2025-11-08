@@ -1,0 +1,6 @@
+[submodule "lib/lua"]
+	path = lib/lua
+	url = https://github.com/lua/lua.git
+[submodule "lib/wtk"]
+	path = lib/wtk
+	url = https://github.com/adamharrison/wtk.git
